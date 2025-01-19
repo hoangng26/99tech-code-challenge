@@ -19,7 +19,7 @@ export type SelectProps = React.HTMLAttributes<HTMLInputElement> & {
 
 const Select: React.FC<SelectProps> = ({
   label,
-  // classNames,
+  classNames,
   options,
   ...props
 }) => {
@@ -45,25 +45,32 @@ const Select: React.FC<SelectProps> = ({
   }, [id, selectId]);
 
   return (
-    <div className={cx('wrapper')}>
+    <div className={cx('wrapper', classNames?.wrapper)}>
       <div className={cx('container')}>
-        <label className={cx('label')} htmlFor={id ?? selectId}>
+        <label
+          className={cx('label', classNames?.label)}
+          htmlFor={id ?? selectId}
+        >
           {label}
         </label>
 
         <div className={cx('select-container')}>
           <input
-            className={cx('input')}
+            className={cx('input', classNames?.select)}
             readOnly
             placeholder="Select currency"
             role="combobox"
             id={selectId}
             onClick={() => setIsOptionsOpen(!isOptionsOpen)}
             ref={inputRef}
+            aria-expanded={isOptionsOpen}
             {...props}
           />
 
-          <label htmlFor={id ?? selectId} className={cx('value')}>
+          <label
+            htmlFor={id ?? selectId}
+            className={cx('value', classNames?.select)}
+          >
             {
               options?.find(
                 (option) => option.value === inputRef.current?.value
@@ -74,7 +81,7 @@ const Select: React.FC<SelectProps> = ({
       </div>
 
       <div className={cx('options-wrapper', { open: isOptionsOpen })}>
-        <ul className={cx('options')} role="listbox">
+        <ul className={cx('options')} role="list">
           {options?.map((option) => (
             <li
               key={option.value}
