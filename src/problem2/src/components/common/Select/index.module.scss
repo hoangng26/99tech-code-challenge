@@ -1,0 +1,67 @@
+.wrapper {
+  @apply relative;
+  min-height: 72px;
+
+  .container {
+    @apply border border-gray-300 rounded-lg py-2 px-4 transition-all;
+
+    &:has(.input:focus) {
+      @apply border-blue-500 border-2;
+    }
+
+    &:not(:has(.input:focus)):hover {
+      @apply bg-gray-200;
+    }
+
+    .label {
+      @apply block w-full text-sm text-gray-500;
+    }
+
+    .select-container {
+      @apply relative;
+
+      .value {
+        @apply absolute top-0 left-0 w-full h-full;
+      }
+    }
+
+    .input,
+    .value {
+      @apply w-full font-medium text-2xl cursor-pointer;
+    }
+
+    .input {
+      @apply outline-none bg-transparent relative;
+
+      &:not(:placeholder-shown) {
+        @apply opacity-0 inset-0 z-10;
+      }
+
+      &:placeholder-shown + .value {
+        @apply hidden;
+      }
+    }
+  }
+}
+
+.options-wrapper {
+  @apply absolute z-10 w-full bg-white rounded-lg mt-2 hidden overflow-hidden transition-all;
+  box-shadow: rgba(0, 17, 51, 0.1) 0px 10px 40px;
+
+  &.open {
+    @apply block;
+  }
+
+  .options {
+    @apply overflow-y-auto;
+    max-height: 300px;
+
+    .option {
+      @apply py-2 px-4 cursor-pointer font-semibold;
+
+      &:hover {
+        @apply bg-gray-200;
+      }
+    }
+  }
+}
