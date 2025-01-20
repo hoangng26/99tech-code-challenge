@@ -41,6 +41,18 @@
         @apply hidden;
       }
     }
+
+    &:has(.input[aria-invalid='true']) {
+      @apply border-red-500;
+
+      .label {
+        @apply text-red-500;
+      }
+    }
+  }
+
+  .error {
+    @apply text-red-500 text-xs font-semibold;
   }
 }
 
