@@ -1,3 +1,4 @@
+import { Progress } from '@/assets';
 import classNames from 'classnames/bind';
 import React, { PropsWithoutRef, useId } from 'react';
 import styles from './index.module.scss';
@@ -11,6 +12,7 @@ type BaseProps = {
   };
   prefix?: React.ReactNode;
   suffix?: React.ReactNode;
+  loading?: boolean;
 };
 
 type InputProps = PropsWithoutRef<
@@ -20,7 +22,10 @@ type InputProps = PropsWithoutRef<
 const cx = classNames.bind(styles);
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, classNames, prefix, suffix, ...props }, ref) => {
+  (
+    { className, label, classNames, prefix, suffix, loading, ...props },
+    ref
+  ) => {
     const { id } = props;
     const inputId = useId();
 
@@ -45,11 +50,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             />
 
             {suffix && <span className={cx('suffix')}>{suffix}</span>}
+
+            {loading && (
+              <div className={cx('loading')}>
+                <Progress width={24} height={24} className="text-gray-500" />
+              </div>
+            )}
           </div>
         </div>
 
         {props['aria-invalid'] && (
-          <span className={cx('error')}>
+          <span className={cx('error')} role="alert">
             {props['aria-errormessage'] ||
               `${label ?? 'This field'} is invalid`}
           </span>

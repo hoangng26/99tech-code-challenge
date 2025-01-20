@@ -21,8 +21,12 @@
       @apply w-full;
     }
 
-    .input-container:has(.prefix) {
-      @apply flex items-center;
+    .input-container {
+      @apply relative;
+
+      &:has(.prefix) {
+        @apply flex items-center;
+      }
     }
 
     .input,
@@ -45,6 +49,14 @@
   }
 
   .error {
-    @apply text-red-500 text-xs font-semibold;
+    @apply text-red-500 text-xs font-semibold absolute mt-1;
+  }
+}
+
+.loading {
+  @apply absolute right-0 top-1/2 transform -translate-y-1/2;
+
+  svg {
+    @apply animate-spin;
   }
 }

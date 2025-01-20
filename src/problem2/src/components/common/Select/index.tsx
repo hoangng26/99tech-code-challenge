@@ -95,7 +95,7 @@ const Select: React.ForwardRefExoticComponent<SelectProps> = React.forwardRef<
         </div>
 
         {props['aria-invalid'] && (
-          <span className={cx('error')}>
+          <span className={cx('error')} role="alert">
             {props['aria-errormessage'] ||
               `${label ?? 'This field'} is invalid`}
           </span>

@@ -3,7 +3,7 @@
 }
 
 .result-wrapper {
-  @apply flex gap-4;
+  @apply flex gap-4 col-span-3 mt-4;
 
   .input {
     @apply font-semibold text-base text-gray-500 leading-7;

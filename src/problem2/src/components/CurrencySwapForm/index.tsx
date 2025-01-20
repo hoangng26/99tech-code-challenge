@@ -1,11 +1,12 @@
 import { Coin, Swap } from '@/assets';
+import tokenService from '@/core/services/TokenService';
+import { Price } from '@/core/types';
 import classNames from 'classnames/bind';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import Input from '../common/Input';
 import Select, { SelectProps } from '../common/Select';
 import styles from './index.module.scss';
-import prices, { iconBaseUrl } from './prices';
 
 const cx = classNames.bind(styles);
 
@@ -16,40 +17,103 @@ type FormDataType = {
 };
 
 const CurrencySwapFormComponent: React.FC = () => {
-  // const [value, setValue] = useDebounce(0, 1000);
   const {
     register,
     handleSubmit,
     formState: { errors },
     control,
+    setValue: formSetValue,
+    watch,
   } = useForm<FormDataType>();
   const formRef = React.useRef<HTMLFormElement>(null);
+  const [value, setValue] = useState<FormDataType>();
+  const [prices, setPrices] = useState<Price[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const options: SelectProps['options'] = prices.map(
-    (price): NonNullable<SelectProps['options']>[number] => ({
-      label: (
-        <div className="flex items-center gap-2">
-          <span className="w-6 h-6">
-            <img
-              src={`${iconBaseUrl}/${price.currency}.svg`}
-              alt={price.currency}
-              className="w-full h-full"
-              onError={function (e) {
-                e.currentTarget.src = Coin;
-              }}
-            />
-          </span>
+  const amountWatcher = watch('amount');
+  const fromWatcher = watch('from');
+  const toWatcher = watch('to');
 
-          <span>{price.currency}</span>
-        </div>
-      ),
-      value: price.currency,
-    })
+  const priceFrom = useMemo(
+    () => prices.find((price) => price.currency === fromWatcher)?.price,
+    [fromWatcher, prices]
+  );
+  const priceTo = useMemo(
+    () => prices.find((price) => price.currency === toWatcher)?.price,
+    [toWatcher, prices]
   );
 
+  const options: SelectProps['options'] = useMemo(() => {
+    return prices.map((price): NonNullable<SelectProps['options']>[number] => {
+      const iconUrl = tokenService.getIconUrl(price.currency);
+
+      return {
+        label: (
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6">
+              <img
+                src={iconUrl}
+                alt={price.currency}
+                className="w-full h-full"
+                onError={function (e) {
+                  e.currentTarget.src = Coin;
+                }}
+              />
+            </span>
+
+            <span>{price.currency}</span>
+          </div>
+        ),
+        value: price.currency,
+      };
+    });
+  }, [prices]);
+
   const formSubmitHandler = (data: FormDataType) => {
-    console.log(data);
+    new Promise<FormDataType>((resolve) => {
+      setLoading(true);
+      setTimeout(() => resolve(data), 1000);
+    }).then((data) => {
+      setLoading(false);
+      setValue(data);
+    });
   };
+
+  const switchCurrenciesHandler = () => {
+    const tempFrom = fromWatcher;
+    formSetValue('from', toWatcher);
+    formSetValue('to', tempFrom);
+    // formRef.current?.dispatchEvent(new Event('submit', { bubbles: true }));
+  };
+
+  const convertAmount = (amount: number, reverse?: boolean) => {
+    return !reverse
+      ? (amount * (priceTo ?? 1)) / (priceFrom ?? 1)
+      : (amount * (priceFrom ?? 1)) / (priceTo ?? 1);
+  };
+
+  useEffect(() => {
+    const fetchPricesHandler = async () => {
+      const fetchPrices = await tokenService.getPrices();
+      setPrices(fetchPrices);
+    };
+
+    fetchPricesHandler();
+  }, []);
+
+  useEffect(() => {
+    let submitTimeout: number;
+
+    if (value) {
+      submitTimeout = setTimeout(() => {
+        formRef.current?.dispatchEvent(new Event('submit', { bubbles: true }));
+      }, 1);
+    }
+
+    return () => {
+      clearTimeout(submitTimeout);
+    };
+  }, [amountWatcher, fromWatcher, toWatcher]);
 
   return (
     <div className={cx('form-wrapper')}>
@@ -62,6 +126,7 @@ const CurrencySwapFormComponent: React.FC = () => {
             placeholder="1.00"
             aria-invalid={!!errors.amount}
             aria-errormessage={errors.amount?.message}
+            loading={loading}
             {...register('amount', {
               required: 'Amount is required',
               valueAsNumber: true,
@@ -78,7 +143,9 @@ const CurrencySwapFormComponent: React.FC = () => {
               }}
               render={({ field }) => (
                 <Select
-                  options={options}
+                  options={options.filter(
+                    (option) => option.value !== toWatcher
+                  )}
                   label="From"
                   classNames={{
                     container: '!pr-10',
@@ -99,10 +166,12 @@ const CurrencySwapFormComponent: React.FC = () => {
               }}
               render={({ field }) => (
                 <Select
-                  options={options}
+                  options={options.filter(
+                    (option) => option.value !== fromWatcher
+                  )}
                   label="To"
                   classNames={{
-                    container: '!pr-10',
+                    container: '!pl-10',
                   }}
                   id="to"
                   aria-invalid={!!errors.to}
@@ -117,6 +186,7 @@ const CurrencySwapFormComponent: React.FC = () => {
                 className="inline-flex rounded-full border border-solid border-gray-250 bg-white p-4 hover:bg-gray-100 text-gray-700"
                 aria-label="Swap currencies"
                 type="button"
+                onClick={switchCurrenciesHandler}
               >
                 <Swap height={16} width={16} />
               </button>
@@ -125,27 +195,51 @@ const CurrencySwapFormComponent: React.FC = () => {
 
           <div className={cx('result-wrapper')}>
             <div className="flex-1">
-              <p className={cx('input')}>
-                {100.0} {'BLUR'} =
-              </p>
+              {value && (
+                <>
+                  <p className={cx('input')}>
+                    {value.amount ?? 1} {value.from} =
+                  </p>
 
-              <p className={cx('output')}>
-                {100.0} {'BLUR'}
-              </p>
+                  <p className={cx('output')}>
+                    {convertAmount(value.amount)} {value.to}
+                  </p>
 
-              <div className={cx('from-to-rate')}>
-                <p>
-                  1 {'BLUR'} = 1 {'USD'}
-                </p>
+                  <div className={cx('value.from-to-rate')}>
+                    <p>
+                      1 {value.from} = {convertAmount(1)} {value.to}
+                    </p>
 
-                <p>
-                  1 {'BLUR'} = 1 {'USD'}
-                </p>
-              </div>
+                    <p>
+                      1 {value.to} = {convertAmount(1, true)} {value.from}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="flex-none">
-              <button type="submit">Submit</button>
+            <div className="flex-none h-fit grid gap-4">
+              {value && (
+                <p className="text-xs text-gray-500">
+                  <span className="text-blue-700 font-semibold">
+                    {value.from}
+                  </span>{' '}
+                  to{' '}
+                  <span className="text-blue-700 font-semibold">
+                    {value.to}
+                  </span>{' '}
+                  conversion — Last updated {new Date().toUTCString()}
+                </p>
+              )}
+
+              {!value && (
+                <button
+                  type="submit"
+                  className="rounded-xl bg-blue-500 px-6 py-3 text-center text-base font-semibold text-white transition-colors duration-200 hover:bg-blue-400 w-[234px] ml-auto"
+                >
+                  Submit
+                </button>
+              )}
             </div>
           </div>
         </div>
