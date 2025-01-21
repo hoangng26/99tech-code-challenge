@@ -7,17 +7,7 @@ var usersRouter = express.Router();
 /* GET users listing. */
 usersRouter.get('/', personController.getAllPersons);
 
-usersRouter.get('/:id', async function (req, res, next) {
-  const id = req.params.id;
-  const data = await Person.findByPk(id);
-  res.send(data);
-});
-
-interface SearchQuery {
-  name?: string;
-}
-
-usersRouter.post(
+usersRouter.get(
   '/search',
   async function (
     req: Request<{}, {}, {}, SearchQuery>,
@@ -37,6 +27,16 @@ usersRouter.post(
     }
   }
 );
+
+usersRouter.get('/detail/:id', async function (req, res, next) {
+  const id = req.params.id;
+  const data = await Person.findByPk(id);
+  res.send(data);
+});
+
+interface SearchQuery {
+  name?: string;
+}
 
 usersRouter.post('/create', function (req, res, next) {
   const data = req.body;
